@@ -1,0 +1,58 @@
+#!/bin/dash
+
+# Filter and check each status
+
+commit=false
+
+for  commit_name in seq "`ls .legit/commit_msg|sort -r|head -1`" -1 0; do
+	if [ -d ".legit/commit_msg/$commit_name/`ls .legit/curr_branch`" ]; then
+		last_commit=$commit_name
+		break
+	fi
+done
+fname="`find -type f|rev|cut -d "/" -f1|rev|sort|uniq`"
+
+for curr in $fname; do
+	if [ ! -f .legit/index/$curr ]; then
+		if [ -f $curr ]; then
+				echo "$curr - untracked"
+				continue
+		else
+			if [ -f .legit/repository/$last_commit/$curr ]; then
+				echo "$curr - deleted"
+				continue
+			fi
+		fi
+	else
+		for repo in .legit/repository/$last_commit/$curr; do
+			if [ -f $repo ]; then
+				if cmp -s $repo $curr; then
+					echo "$curr - same as repo"
+					continue
+				else
+					if cmp -s $curr .legit/index/$curr; then
+						echo "$curr - file changed, changes staged for commit"	
+						continue
+					else
+						if cmp -s .legit/index/$curr $repo; then
+							if [ -f $curr ]; then
+								echo "$curr - file changed, changes not staged for commit"
+								continue
+							else
+								echo "$curr - file deleted"
+								continue
+							fi
+						else
+							echo "$curr - file changed, different changes staged for commit"
+							continue		
+						fi		
+					fi
+				fi
+			else
+				echo "$curr - added to index"
+				continue
+			fi
+		done
+	fi
+done
+

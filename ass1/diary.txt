@@ -1,0 +1,11 @@
+Date		Start		Stop		Activity		Comments
+22/06/2019	14:00		18:00		coding		Implemented the subset 0
+23/06/2019	16:30		19:20		debugging	Fixed all the bugs in subset 0 and pass the autotest
+24/06/2019	12:30		13:30		coding		Implemented the subset 1 (legit-commit [-a] -m)
+24/06/2019	18:00		22:50		coding		Implemented the subset 1
+25/06/2019	12:30		14:00		debugging	Fixed the bugs in legit-rm
+25/06/2019	22:00		23:10		debugging	Fixed the bugs in legit-status and pass the autotest
+30/06/2019	01:00		03:30		coding		Implemented the legit-branch and modify legit-commit
+30/06/2019	17:50		23:30		coding		Implemented the legit-checkout
+03/07/2019	19:00		23:20		coding		Implemented the legit-checkout and fixed the bugs
+05/07/2019	13:00		14:50		coding		Giving up doing legit-merge and writing test and log

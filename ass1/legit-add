@@ -1,0 +1,33 @@
+#!/bin/dash
+
+##########
+# First check if legit-init
+# Then for each file input by command line
+# if they are exist then pass, otherwise if they in the index file, remove then, if not, error and exit
+# the second loop just cp all the files into index file
+##########
+
+if [ ! -d ".legit/index" ]; then
+	echo "legit-add: error: no .legit directory containing legit repository exists"
+	exit 0
+fi
+for file in "$@"; do
+	if [ -f "$file" ]; then 
+		if [ -f "`echo "$file"|egrep -o '[a-zA-Z0-9\.\_\-]+'`" ];then
+			true
+		fi
+	else
+		if [ -f .legit/index/$file ]; then
+			rm ".legit/index/$file"
+		else
+			echo "legit-add: error: can not open '$file'"
+			exit 0
+		fi
+	fi
+done
+
+for file in "$@"; do
+	if [ -f "$file" ]; then 
+		cp "$file" ".legit/index"
+	fi
+done

@@ -1,0 +1,11 @@
+#!/bin/dash
+
+dir=".legit/commit_msg"
+
+f="`ls $dir|sort -r`"
+
+for c in $f; do
+	num=$c
+	commit="`cat $dir/$c/commit`"
+	echo "$num $commit"
+done

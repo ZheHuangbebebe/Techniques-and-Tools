@@ -1,0 +1,89 @@
+#!/usr/bin/perl -w
+
+##########
+# First check if no repository exist, no branch can be made
+# Then do each different condition
+# If no input, print all the folder name in .legit/branch
+# If one input, create this branch and find master's last_commit, then put this branch's name into the master's last_commit
+# If two input and first one is '-d', and second input are not master or not exist, remove that branch
+##########
+
+if (! -d ".legit/repository/0"){
+	print"legit-branch: error: your repository does not have any commits yet\n";
+	exit 0;
+}
+
+if ($#ARGV > 1){
+     print"usage: ./legit-branch [-d] [branch-name]\n";
+     exit 0;
+ }
+
+if ($#ARGV == -1){
+    opendir($D, ".legit/branch");
+    while ($folder = readdir $D){
+		if ($folder =~ /[^.]/){
+        	push @f, $folder;
+		}
+    }
+	@sort = sort(@f);
+	foreach $n(@sort){
+		print "$n\n";
+	}
+	closedir $D
+}
+
+if ($#ARGV == 0){
+	if (! -e ".legit/branch/$ARGV[0]"){
+    	mkdir ".legit/branch/$ARGV[0]";
+		opendir ($D,".legit/commit_msg");
+
+		while ($commit = readdir $D){
+			if($commit =~ /[^.]/){
+				push @c, $commit;
+			}
+		}
+		closedir $D;
+
+		@sort = reverse sort (@c);
+		foreach $commit(@sort){
+			if (-e ".legit/commit_msg/$commit" ){
+				if (-e ".legit/commit_msg/$commit/master"){
+					$last_commit = $commit;
+					last;
+				}
+			}
+		}
+		mkdir ".legit/commit_msg/$last_commit/$ARGV[0]";
+	}
+	else{
+		print "legit-branch: error: branch '$ARGV[0]' already exists\n";
+		exit 0;
+	}
+}
+
+if ($#ARGV == 1 && ($ARGV[0] cmp "-d") == 0){
+	if (($ARGV[1] cmp "master") == 0){
+		print"legit-branch: error: can not delete branch 'master'\n";
+		exit 0;
+	}
+	if (-d ".legit/branch/$ARGV[1]"){
+   		rmdir ".legit/branch/$ARGV[1]";
+		print "Deleted branch '$ARGV[1]'\n";
+		opendir ($d, ".legit/curr_branch");
+		while($branch = readdir $d){
+			if($branch =~ /[^.]/){
+				last;
+			}
+		}
+		closedir $d;
+		if(($branch cmp $ARGV[1]) == 0){
+			rmdir ".legit/curr_branch/$ARGV[1]";
+			mkdir ".legit/curr_branch/master";
+		}
+	}
+	else{
+		print "legit-branch: error: branch '$ARGV[1]' does not exist\n";
+		exit 0;
+	}
+}
+

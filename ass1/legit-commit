@@ -1,0 +1,95 @@
+#!/bin/dash
+
+##########
+# If -m and -a, then copy all the files from current directory to index file
+# line 23 the line 64 are checking if this commit changed compare to last commit
+# if changed, $change become 1, otherwise 0
+# Then make directories and files
+##########
+message="$2"
+if [ ! "$1" = "-m" ]; then
+	if [ "$1"="-a" ]; then
+		message="$3"
+
+		for f in .legit/index/*; do
+			if [ "$f" = ".legit/index/*" ]; then
+				continue
+			fi
+			fname="`echo $f|rev|cut -d "/" -f1|rev`"
+			if [ -f $fname ]; then
+				cp $fname ".legit/index"
+			fi
+		done
+	else
+		echo "usage: legit-commit -m message"
+		exit 0
+	fi
+fi
+
+change=0
+c="`ls ".legit/repository/"|sort -r|head -1`"
+
+dir=".legit/repository/"`ls ".legit/repository"|wc -l`""
+
+if [ ! -z $c ]; then
+	for f in .legit/repository/"$c"/*; do
+		fname="`echo $f|rev|cut -d "/" -f1|rev`"
+		if [ -f .legit/index/$fname ]; then
+			if ! cmp -s ".legit/repository/"$c"/$fname" ".legit/index/$fname"; then
+				change=1
+				break
+			fi
+		else
+			if [ `ls .legit/repository/$c|wc -l` -eq 0 ]; then
+				if [ `ls .legit/index|wc -l` -eq 0 ]; then
+					break
+				else
+					change=1
+					break
+				fi
+			else
+				change=1
+				break
+			fi
+		fi
+	done
+	for i in .legit/index/*; do
+		if [ -z .legit/index ]; then
+			:
+		fi
+		if [ $i != ".legit/index/*" ]; then
+			iname="`echo $i|rev|cut -d "/" -f1|rev`"
+			if [ ! -f .legit/repository/$c/$iname ]; then
+				change=1
+				break
+			fi
+		fi
+	done
+else
+	change=1
+fi
+
+if [ $change -eq 1 ]; then
+	mkdir "$dir"
+
+	for f in .legit/index/*; do
+	if [ $f != ".legit/index/*" ]; then
+		cp "$f" "$dir"
+	fi
+	done
+
+	num="`echo $dir|rev|cut -d "/" -f1|rev`"	
+	mkdir .legit/commit_msg/$num
+	touch .legit/commit_msg/$num/commit
+	chmod +x .legit/commit_msg/$num/commit
+	echo "$message" > .legit/commit_msg/$num/commit
+	mkdir .legit/commit_msg/$num/`ls .legit/curr_branch`
+	cp -r ".legit/index/." ".legit/branch/`ls .legit/curr_branch`"
+	
+
+	echo "Committed as commit `echo $dir|cut -d "/" -f3`"
+else
+	echo "nothing to commit"
+fi
+
+

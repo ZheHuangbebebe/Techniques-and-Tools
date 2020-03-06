@@ -1,0 +1,130 @@
+#!/bin/dash
+
+##########
+# for each input if it's '-force' or '-cached', make $force or $cached equals true
+# I made lots of loop because the error checking and remove files can't do in same time
+# e.g. if legit-rm exist-file non-exist-file, first one will be removed but second one will be error
+# so I do the error checking first, then do the remove files in another loop
+##########
+
+force=false
+cached=false
+last_commit="`ls ".legit/repository"|sort -r|head -1`"
+if [ -z $last_commit ]; then
+	force=true
+fi
+
+for f in $@; do
+	if [ "$f" = "--force" ]; then
+		force=true
+	elif [ $f = "--cached" ];then
+		cached=true
+	else
+		if [ $force = true ]; then
+			if [ $cached = true ]; then
+				if [ -f .legit/index/$f ]; then
+					true
+				else
+					echo "legit-rm: error: '$f' is not in the legit repository"
+					exit 0
+				fi
+			else
+				if [ -f .legit/index/$f ]; then
+					true
+				else
+					echo "legit-rm: error: '$f' is not in the legit repository"
+					exit 0
+				fi
+			fi
+			for f in $@; do
+				if [ $f = "--force" ]; then
+					continue
+				fi
+				if [ $f = "--cached" ]; then
+					continue
+				fi
+				rm .legit/index/$f
+				if [ -f .legit/branch/`ls .legit/curr_branch`/$f ]; then
+					rm .legit/branch/`ls .legit/curr_branch`/$f
+				fi	
+				if [ $cached = false ]; then
+					rm $f
+				fi
+			done
+			exit 1
+		else
+				if [ $cached = true ]; then
+					if [ -f .legit/index/$f ]; then
+						if [ ! -f .legit/repository/$last_commit/$f ]; then
+							true
+						else
+							if cmp -s .legit/index/$f .legit/repository/$last_commit/$f; then
+								true
+							else
+								if cmp -s $f .legit/index/$f; then
+									true
+								else
+									echo "legit-rm: error: '$f' in index is different to both working file and repository"
+									exit 0
+								fi
+							fi
+						fi
+					else
+						echo "legit-rm: error: '$f' is not in the legit repository"
+						exit 0
+					fi
+				else
+					if [ ! -f .legit/repository/$last_commit/$f ]; then
+						if [ -f .legit/index/$f ]; then
+							echo "legit-rm: error: '$f' has changes staged in the index"
+							exit 0
+						else
+							echo "legit-rm: error: '$f' is not in the legit repository"
+							exit 0
+						fi
+					fi
+					if [ -f .legit/index/$f ]; then
+						if cmp -s .legit/index/$f .legit/repository/$last_commit/$f; then
+							if cmp -s $f .legit/index/$f; then
+								true
+							else
+								echo "legit-rm: error: '$f' in repository is different to working file"
+								exit 0
+							fi
+						else
+							if cmp -s $f .legit/index/$f; then
+								echo "legit-rm: error: '$f' has changes staged in the index"
+								exit 0
+							else
+								echo "legit-rm: error: '$f' in index is different to both working file and repository"
+								exit 0
+							fi
+						fi	
+					else
+						echo "legit-rm: error: '$f' is not in the legit repository"
+						exit 0
+					fi
+				fi
+		fi
+	fi
+done	
+
+for f in $@; do
+	if [ $f = "--force" ]; then
+		continue
+	fi
+	if [ $f = "--cached" ]; then
+		continue
+	fi
+	
+	rm .legit/index/$f
+	if [ -f .legit/branch/`ls .legit/curr_branch`/$f ]; then
+		rm .legit/branch/`ls .legit/curr_branch`/$f
+	fi	
+	if [ $cached = false ]; then
+		rm $f
+	fi
+done		
+
+## if f not in index (deleted or not exist), "legit-rm: error: '$f' is not in the legit repository"
+## if f in index but not in last_commit, "legit-rm: error: 'b' is not in the legit repository"

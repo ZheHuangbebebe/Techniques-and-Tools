@@ -1,0 +1,126 @@
+#!/usr/bin/perl -w
+
+##########
+# remove_old_last_commit_file(branch_name): remove all the file in current directory, if they have same content
+# add_curr_last_commit_file(branch_name): add all the fille which not exist in current directory
+# last_commit(branch_name): find branch's last_commit
+# readfile(file_name): read a file's content
+# remove_index_file(): remove all the file in index file
+# add_index_file(branch_name): copy all the files from .legit/branch/branch_name/ to .legit/index
+# the main function just call the functions and change the current directory
+##########
+
+if ($#ARGV != 0){
+    print "usage: legit-checkout branch-name";
+    exit 0;
+}
+$curr = $ARGV[0];
+opendir ($D, ".legit/curr_branch");
+while ($old = readdir $D){
+	if($old =~ /[^.]/){
+		last;
+	}
+}
+closedir $D;
+
+if ( ! -d ".legit/branch/$curr"){
+	print"legit-checkout: error: unknown branch '$curr'\n";
+	exit 0;
+}
+
+if (-d ".legit/curr_branch/$curr") {
+	print"legit-checkout: error: already in branch '$curr'\n";
+	exit 0;
+}
+
+remove_old_last_commit_file($old);
+add_curr_last_commit_file($curr);
+remove_index_file();
+add_index_file();
+rmdir ".legit/curr_branch/$old";
+mkdir ".legit/curr_branch/$curr";
+print"Switched to branch '$curr'\n";
+
+sub remove_old_last_commit_file{
+	my ($branch) = @_;
+	@local = glob("*");
+	$last = last_commit($branch);
+	@last_commit = glob(".legit/repository/$last/*");
+	foreach $lo(@local){
+		foreach $la(@last_commit){
+			@la_name = split(/\//, $la);
+			if (($la_name[3] cmp $lo) == 0){
+				$lo_context = readfile($lo);
+				$la_context = readfile($la);
+				if (($lo_context cmp $la_context) == 0){
+					unlink $lo;
+				}
+			}
+		}
+	}
+}
+
+sub add_curr_last_commit_file{
+	my ($branch) = @_;
+	@local = glob("*");
+	$last = last_commit($branch);
+	@last_commit = glob(".legit/repository/$last/*");
+	foreach $la(@last_commit){
+		@file = split(/\//, $la);
+		if (! grep $_ eq $file[3], @local){
+			open(my $r, '<', $la);
+			open(my $w, '>', $file[3]);
+			print $w (<$r>);
+			close $r;
+			close $w;
+		}
+	}
+}
+
+sub last_commit{
+	my ($branch) = @_;
+	opendir ($D,".legit/commit_msg");
+
+	while ($commit = readdir $D){
+		if($commit =~ /[^.]/){
+			push @c, $commit;
+		}
+	}
+	closedir $D;
+
+	@sort = reverse sort (@c);
+	foreach $commit(@sort){
+		if (-e ".legit/commit_msg/$commit" ){
+			if (-e ".legit/commit_msg/$commit/$branch"){
+				return $commit;
+			}
+		}
+	}
+}
+
+sub readfile{
+	$context = "";
+	my ($fh) = @_;
+	open $f, '<', $fh or print"$fh\n";
+	while ($line = <$f>){
+		$context = "$context.$line";
+	}
+	close $f;
+	return $context;
+}
+
+sub remove_index_file{
+	unlink ".legit/index/*";
+}
+
+sub add_index_file{
+	@index = glob(".legit/branch/$curr/*");
+	foreach $i(@index){
+			open(my $r, '<', $i);
+			@i_name = split(/\//, $i);
+			open(my $w, '>', ".legit/index/$i_name[3]");
+			print $w (<$r>);
+			close $r;
+			close $w;
+	}
+}

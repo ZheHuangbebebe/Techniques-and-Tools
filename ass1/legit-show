@@ -1,0 +1,31 @@
+#!/bin/dash
+
+if [ -z "`echo $1|egrep -o "[0-9]*\:[a-zA-Z0-9\.\-\_]"`" ]; then
+	echo "usage: legit-show [commit number]:filename"
+fi
+
+num="`echo $1|cut -d ":" -f1`"
+file="`echo $1|cut -d ":" -f2`"
+
+if [ -z $num ];then
+	if [ -f .legit/index/$f/$file ]; then
+		cat .legit/index/$f/$file
+	else
+		echo "legit-show: error: '$file' not found in index"
+		exit 0
+	fi
+else
+	if [ -f .legit/repository/$num/$file ]; then
+		cat .legit/repository/$num/$file
+		exit 1
+	else
+		if [ $num -gt "`ls .legit/repository|sort -r|head -1`" ]; then
+			echo "legit-show: error: unknown commit '$num'"
+		else
+			echo "legit-show: error: '$file' not found in commit $num"
+			exit 0
+		fi
+	fi
+	
+	exit 0
+fi
